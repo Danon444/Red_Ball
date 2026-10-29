@@ -1,30 +1,47 @@
 #include "../include/Ball.h"
 
 #include <algorithm>
+#include <cmath>
 
 Ball::Ball()
 {
-    shape.setRadius(30.f);
+    shape.setRadius(radius);
+    shape.setOrigin({radius, radius});
     shape.setFillColor(sf::Color::Red);
+
+    stripe.setSize({radius * 1.4f, 6.f});
+    stripe.setOrigin(stripe.getSize() / 2.f);
+    stripe.setFillColor(sf::Color(255, 220, 150));
     reset();
 }
 
 void Ball::reset()
 {
-    shape.setPosition(spawnPosition);
+    position = spawnPosition;
+    rotationDegrees = 0.f;
     velocityX = 0.f;
     velocityY = 0.f;
     onGround = false;
+    syncVisuals();
 }
 
 sf::Vector2f Ball::getPosition() const
 {
-    return shape.getPosition();
+    return position;
 }
 
 sf::FloatRect Ball::getBounds() const
 {
-    return shape.getGlobalBounds();
+    return {position, {radius * 2.f, radius * 2.f}};
+}
+
+void Ball::syncVisuals()
+{
+    sf::Vector2f center = position + sf::Vector2f{radius, radius};
+    shape.setPosition(center);
+    stripe.setPosition(center);
+    shape.setRotation(sf::degrees(rotationDegrees));
+    stripe.setRotation(sf::degrees(rotationDegrees));
 }
 
 bool Ball::isOnGround() const
@@ -66,13 +83,21 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
 
     if (direction != 0.f)
     {
-        float acceleration = onGround ? groundAcceleration : airAcceleration;
+        float acceleration;
+
+        if (onGround)
+        {
+            acceleration = groundAcceleration;
+        }
+        else
+        {
+            acceleration = airAcceleration;
+        }
         velocityX += direction * acceleration * deltaTime;
         velocityX = std::clamp(velocityX, -maxSpeed, maxSpeed);
     }
     else if (onGround)
     {
-        // Approach zero without changing direction while braking.
         float speedLoss = braking * deltaTime;
         if (velocityX > 0.f)
         {
@@ -86,11 +111,10 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
 
     float moveX = velocityX * deltaTime;
 
-    float diameter = shape.getRadius() * 2.f;
-    sf::Vector2f previousPosition = shape.getPosition();
+    float diameter = radius * 2.f;
+    sf::Vector2f previousPosition = position;
     float nextX = previousPosition.x + moveX;
 
-    // Resolve horizontal movement before applying vertical movement.
     for (const sf::FloatRect& surface : surfaces)
     {
         float surfaceRight = surface.position.x + surface.size.x;
@@ -116,22 +140,21 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
         }
     }
 
-    shape.setPosition({nextX, previousPosition.y});
+    position.x = nextX;
 
     float previousTop = previousPosition.y;
-    float previousBottom = shape.getPosition().y + diameter;
+    float previousBottom = previousPosition.y + diameter;
 
     velocityY += gravity * deltaTime;
-    shape.move({0.f, velocityY * deltaTime});
+    position.y += velocityY * deltaTime;
 
-    float ballLeft = shape.getPosition().x;
+    float ballLeft = position.x;
     float ballRight = ballLeft + diameter;
-    float ballBottom = shape.getPosition().y + diameter;
-    float ballTop = shape.getPosition().y;
+    float ballBottom = position.y + diameter;
+    float ballTop = position.y;
 
     onGround = false;
 
-    // Choose the highest surface crossed during this fall.
     float landingTop = ballBottom;
     bool hitCeiling = false;
     float ceilingBottom = ballTop;
@@ -143,8 +166,25 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
         float surfaceTop = surface.position.y;
         float surfaceBottom = surfaceTop + surface.size.y;
 
-        bool overlapsHorizontally = ballRight > surfaceLeft && ballLeft < surfaceRight;
-        bool crossesTop = previousBottom <= surfaceTop && ballBottom >= surfaceTop;
+        bool overlapsHorizontally;
+        if (ballRight > surfaceLeft && ballLeft < surfaceRight)
+        {
+            overlapsHorizontally = true;
+        }
+        else
+        {
+            overlapsHorizontally = false;
+        }
+
+        bool crossesTop;
+        if (previousBottom <= surfaceTop && ballBottom >= surfaceTop)
+        {
+            crossesTop = true;
+        }
+        else
+        {
+            crossesTop = false;
+        }
 
         if (velocityY >= 0.f && overlapsHorizontally && crossesTop)
         {
@@ -155,7 +195,15 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
             onGround = true;
         }
 
-        bool crossesBottom = previousTop >= surfaceBottom && ballTop <= surfaceBottom;
+        bool crossesBottom;
+        if (previousTop >= surfaceBottom && ballTop <= surfaceBottom)
+        {
+            crossesBottom = true;
+        }
+        else
+        {
+            crossesBottom = false;
+        }
 
         if (velocityY < 0.f && overlapsHorizontally && crossesBottom)
         {
@@ -169,19 +217,25 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
 
     if (onGround)
     {
-        shape.setPosition({ballLeft, landingTop - diameter});
+        position.y = landingTop - diameter;
         velocityY = 0.f;
     }
     else if (hitCeiling)
     {
-        shape.setPosition({ballLeft, ceilingBottom});
+        position.y = ceilingBottom;
         velocityY = -velocityY * ceilingRestitution;
     }
+
+    constexpr float radiansToDegrees = 180.f / 3.14159265f;
+    float distanceX = position.x - previousPosition.x;
+    rotationDegrees = std::fmod(rotationDegrees + distanceX / radius * radiansToDegrees, 360.f);
+    syncVisuals();
 
 }    
 
 void Ball::draw(sf::RenderWindow& window) const
 {
     window.draw(shape);
+    window.draw(stripe);
 }
 

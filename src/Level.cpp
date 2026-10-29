@@ -40,7 +40,6 @@ std::vector<sf::FloatRect> Level::getSurfaceBounds() const
 
 sf::FloatRect Level::getFinishBounds() const
 {
-    // A small trigger at the base of the pole, above the last platform.
     sf::Vector2f position = finishPole.getPosition();
     position.x -= 4.f;
     position.y += finishPole.getSize().y - 12.f;

@@ -7,7 +7,11 @@ class Ball
 {
 private:
     sf::CircleShape shape;
+    sf::RectangleShape stripe;
     sf::Vector2f spawnPosition{100.f, 100.f};
+    sf::Vector2f position;
+    float radius = 30.f;
+    float rotationDegrees = 0.f;
 
     float velocityX = 0.f;
     float maxSpeed = 220.f;
@@ -19,6 +23,8 @@ private:
     float jumpSpeed = 450.f;
     float ceilingRestitution = 0.7f;
     bool onGround = false;
+
+    void syncVisuals();
 public:
     Ball();
     void reset();

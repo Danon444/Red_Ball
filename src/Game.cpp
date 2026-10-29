@@ -5,7 +5,7 @@ Game::Game()
       font("assets/fonts/arial.ttf"),
       victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36)
 {
-    window.setKeyRepeatEnabled(false);
+    window.setKeyRepeatEnabled(false); // запрещает повторное нажатие при зажимании кнопки
     window.setFramerateLimit(120);
 
     victoryText.setFillColor(sf::Color::Yellow);
