@@ -1,0 +1,14 @@
+/build/
+/build-*/
+/cmake-build-*/
+/RedBall_Reference/
+
+# Local editor settings
+/.vs/
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.pdb
