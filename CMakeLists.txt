@@ -35,3 +35,11 @@ add_executable(RedBall
     )
 target_link_libraries(RedBall PRIVATE SFML::Graphics)
 target_include_directories(RedBall PRIVATE include)
+
+add_custom_target(RedBallAssets ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:RedBall>/assets"
+)
+add_dependencies(RedBall RedBallAssets)
+
