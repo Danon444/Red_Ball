@@ -43,3 +43,18 @@ add_custom_target(RedBallAssets ALL
 )
 add_dependencies(RedBall RedBallAssets)
 
+# Enabling automatic tests
+option(REDBALL_BUILD_CHECKS "Build the level traversal check" OFF)
+if(REDBALL_BUILD_CHECKS)
+    enable_testing()
+    add_executable(LevelTraversalCheck 
+        tests/LevelTraversal.cpp 
+        src/Ball.cpp 
+        src/Level.cpp
+    )
+    target_include_directories(LevelTraversalCheck PRIVATE include)
+    target_link_libraries(LevelTraversalCheck PRIVATE SFML::Graphics)
+    add_test(NAME LevelTraversal COMMAND LevelTraversalCheck)
+    set_tests_properties(LevelTraversal PROPERTIES TIMEOUT 30)
+endif()
+

@@ -1,16 +1,23 @@
 #include "Game.h"
 
+#include <algorithm>
+
 Game::Game()
     : window(sf::VideoMode({800, 600}), "Red Ball"),
       font("assets/fonts/arial.ttf"),
-      victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36)
+      victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36),
+      statusText(font, "", 18),
+      camera(sf::FloatRect({0.f, 0.f}, {800.f, 600.f}))
 {
-    window.setKeyRepeatEnabled(false); // запрещает повторное нажатие при зажимании кнопки
+    window.setKeyRepeatEnabled(false); // запрещает повторное нажатие при зажимании клавиши
     window.setFramerateLimit(120);
 
     victoryText.setFillColor(sf::Color::Yellow);
     victoryText.setOrigin(victoryText.getLocalBounds().getCenter());
     victoryText.setPosition({400.f, 300.f});
+    statusText.setPosition({16.f, 12.f});
+    statusText.setFillColor(sf::Color(30, 45, 55));
+    updateCamera();
 }
 
 void Game::run()
@@ -19,7 +26,7 @@ void Game::run()
 
     while (window.isOpen())
     {
-        float deltaTime = clock.restart().asSeconds();
+        float deltaTime = std::min(clock.restart().asSeconds(), 0.05f);
 
         processEvents();
 
@@ -28,7 +35,14 @@ void Game::run()
             break;
         }
 
-        update(deltaTime);
+        // Small physics steps keep jumps stable during brief frame delays.
+        while (deltaTime > 0.f)
+        {
+            float step = std::min(deltaTime, 1.f / 120.f);
+            update(step);
+            deltaTime -= step;
+        }
+        updateCamera();
         render();
     }
 }
@@ -50,6 +64,9 @@ void Game::processEvents()
                 if (key->code == sf::Keyboard::Key::Enter)
                 {
                     player.reset();
+                    level.reset();
+                    checkpointReached = false;
+                    respawnPosition = {100.f, 100.f};
                     state = State::Playing;
                 }
             }
@@ -71,12 +88,19 @@ void Game::update(float deltaTime)
     std::vector<sf::FloatRect> surfaces = level.getSurfaceBounds();
     player.update(deltaTime, surfaces);
 
-    float windowBottom = static_cast<float>(window.getSize().y);
-
-    if (player.getPosition().y > windowBottom)
+    if (player.getPosition().y > level.getDeathY() ||
+        player.getPosition().x < -60.f || player.getPosition().x > level.getWidth())
     {
-        player.reset();
+        player.reset(respawnPosition);
         return;
+    }
+
+    if (!checkpointReached && player.isOnGround() &&
+        player.getBounds().findIntersection(level.getCheckpointBounds()))
+    {
+        checkpointReached = true;
+        respawnPosition = level.getCheckpointSpawn();
+        level.activateCheckpoint();
     }
 
     if (player.isOnGround() &&
@@ -88,9 +112,24 @@ void Game::update(float deltaTime)
 
 void Game::render()
 {
-    window.clear();
+    window.clear(sf::Color(135, 206, 235));
+    window.setView(camera);
     level.draw(window);
     player.draw(window);
+
+    window.setView(window.getDefaultView());
+    int progress = static_cast<int>(std::clamp(player.getPosition().x / 7550.f, 0.f, 1.f) * 100.f);
+    std::string message = "A/D or arrows: move | W/Up/Space: jump\nRoute: " + std::to_string(progress) + "%";
+    if (checkpointReached)
+    {
+        message += " | Checkpoint saved";
+    }
+    else
+    {
+        message += " | Reach the blue flag to save progress";
+    }
+    statusText.setString(message);
+    window.draw(statusText);
 
     if (state == State::Won)
     {
@@ -101,4 +140,11 @@ void Game::render()
     }
 
     window.display();
+}
+
+void Game::updateCamera()
+{
+    float centerX = player.getPosition().x + 30.f;
+    centerX = std::clamp(centerX, 400.f, level.getWidth() - 400.f);
+    camera.setCenter({centerX, 300.f});
 }

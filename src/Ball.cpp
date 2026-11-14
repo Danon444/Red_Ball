@@ -30,6 +30,13 @@ sf::Vector2f Ball::getPosition() const
     return position;
 }
 
+void Ball::reset(sf::Vector2f newPosition)
+{
+    reset();
+    position = newPosition;
+    syncVisuals();
+}
+
 sf::FloatRect Ball::getBounds() const
 {
     return {position, {radius * 2.f, radius * 2.f}};
@@ -81,6 +88,11 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
         direction += 1.f;
     }
 
+    update(deltaTime, surfaces, direction);
+}
+
+void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction)
+{
     if (direction != 0.f)
     {
         float acceleration;

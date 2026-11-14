@@ -22,10 +22,15 @@ private:
     sf::Clock clock;
     sf::Font font;
     sf::Text victoryText;
+    sf::Text statusText;
+    sf::View camera;
+    sf::Vector2f respawnPosition{100.f, 100.f};
+    bool checkpointReached = false;
 
     void processEvents();
     void update(float deltaTime);
     void render();
+    void updateCamera();
 
 public:
     Game();

@@ -28,10 +28,12 @@ private:
 public:
     Ball();
     void reset();
+    void reset(sf::Vector2f newPosition);
     sf::Vector2f getPosition() const;
     sf::FloatRect getBounds() const;
     bool isOnGround() const;
     void handleEvent(const sf::Event& event);
     void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces);
+    void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction);
     void draw(sf::RenderWindow& window) const;
 };
