@@ -3,18 +3,18 @@
 #include <algorithm>
 
 Game::Game()
-    : window(sf::VideoMode({800, 600}), "Red Ball"),
+    : window(sf::VideoMode({1100, 700}), "Red Ball"),
       font("assets/fonts/arial.ttf"),
       victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36),
       statusText(font, "", 18),
-      camera(sf::FloatRect({0.f, 0.f}, {800.f, 600.f}))
+      camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f}))
 {
     window.setKeyRepeatEnabled(false); // запрещает повторное нажатие при зажимании клавиши
     window.setFramerateLimit(120);
 
     victoryText.setFillColor(sf::Color::Yellow);
     victoryText.setOrigin(victoryText.getLocalBounds().getCenter());
-    victoryText.setPosition({400.f, 300.f});
+    victoryText.setPosition({550.f, 350.f});
     statusText.setPosition({16.f, 12.f});
     statusText.setFillColor(sf::Color(30, 45, 55));
     updateCamera();
@@ -133,7 +133,7 @@ void Game::render()
 
     if (state == State::Won)
     {
-        sf::RectangleShape shade({800.f, 600.f});
+        sf::RectangleShape shade({1100.f, 700.f});
         shade.setFillColor(sf::Color(0, 0, 0, 180));
         window.draw(shade);
         window.draw(victoryText);
@@ -145,6 +145,6 @@ void Game::render()
 void Game::updateCamera()
 {
     float centerX = player.getPosition().x + 30.f;
-    centerX = std::clamp(centerX, 400.f, level.getWidth() - 400.f);
-    camera.setCenter({centerX, 300.f});
+    centerX = std::clamp(centerX, 550.f, level.getWidth() - 550.f);
+    camera.setCenter({centerX, 350.f});
 }

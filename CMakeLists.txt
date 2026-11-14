@@ -27,13 +27,20 @@ if(MINGW)
     endif()
 endif()
 
-add_executable(RedBall 
+set(REDBALL_SOURCES
     src/main.cpp
     src/Ball.cpp
     src/Game.cpp
     src/Level.cpp
-    )
-target_link_libraries(RedBall PRIVATE SFML::Graphics)
+)
+
+if(WIN32)
+    add_executable(RedBall WIN32 ${REDBALL_SOURCES})
+    target_link_libraries(RedBall PRIVATE SFML::Graphics SFML::Main)
+else()
+    add_executable(RedBall ${REDBALL_SOURCES})
+    target_link_libraries(RedBall PRIVATE SFML::Graphics)
+endif()
 target_include_directories(RedBall PRIVATE include)
 
 add_custom_target(RedBallAssets ALL
