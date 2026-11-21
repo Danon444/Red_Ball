@@ -32,6 +32,7 @@ public:
     void reset(sf::Vector2f newPosition);
     sf::Vector2f getPosition() const;
     sf::FloatRect getBounds() const;
+    bool intersects(const sf::FloatRect& rectangle) const;
     bool isOnGround() const;
     void bounceFromEnemy(float enemyTop);
     void followPlatform(const sf::FloatRect& previousBounds, float shiftX);

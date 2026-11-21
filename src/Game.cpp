@@ -114,7 +114,7 @@ void Game::update(float deltaTime)
     }
 
     if (!checkpointReached && player.isOnGround() &&
-        player.getBounds().findIntersection(level.getCheckpointBounds()))
+        player.intersects(level.getCheckpointBounds()))
     {
         checkpointReached = true;
         respawnPosition = level.getCheckpointSpawn();

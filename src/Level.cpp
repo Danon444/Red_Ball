@@ -1,6 +1,7 @@
 #include "Level.h"
 #include "Ball.h"
 
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -269,15 +270,18 @@ bool Level::updateEnemies(float deltaTime, Ball& player, const sf::FloatRect& pr
         enemy.update(deltaTime);
         auto playerBounds = player.getBounds();
         auto enemyBounds = enemy.getBounds();
-        if (!playerBounds.findIntersection(enemyBounds))
+        if (!player.intersects(enemyBounds))
         {
             continue;
         }
 
-        float previousBottom = previousPlayerBounds.position.y + previousPlayerBounds.size.y;
-        float currentBottom = playerBounds.position.y + playerBounds.size.y;
-        float enemyTop = enemyBounds.position.y;
-        if (previousBottom <= enemyTop && currentBottom > enemyTop)
+        const auto center = playerBounds.getCenter();
+        const float enemyTop = enemyBounds.position.y;
+        const float closestX = std::clamp(center.x, enemyBounds.position.x,
+                                          enemyBounds.position.x + enemyBounds.size.x);
+        const bool falling = playerBounds.position.y > previousPlayerBounds.position.y;
+        const bool aboveEnemy = enemyTop - center.y > std::abs(center.x - closestX);
+        if (falling && aboveEnemy)
         {
             enemy.squash();
             player.bounceFromEnemy(enemyTop);
