@@ -7,6 +7,9 @@ class Level
 {
 private:
     std::vector<sf::RectangleShape> surfaces;
+    std::size_t ferryIndex = 0;
+    static constexpr float ferryStartX = 3860.f;
+    float ferryTime = 0.f;
     sf::RectangleShape finishPole;
     sf::RectangleShape finishFlag;
     sf::RectangleShape checkpointPole;
@@ -16,6 +19,8 @@ private:
     void addSurface(sf::Vector2f position, sf::Vector2f size, sf::Color color);
 public:
     Level();
+    sf::FloatRect getFerryBounds() const;
+    float moveFerry(float deltaTime);
 
     std::vector<sf::FloatRect> getSurfaceBounds() const;
     sf::FloatRect getFinishBounds() const;

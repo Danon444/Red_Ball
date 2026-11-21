@@ -9,7 +9,7 @@ Game::Game()
       statusText(font, "", 18),
       camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f}))
 {
-    window.setKeyRepeatEnabled(false); // запрещает повторное нажатие при зажимании клавиши
+    window.setKeyRepeatEnabled(false); // запрещает автоповтор событий при удержании клавиши
     window.setFramerateLimit(120);
 
     victoryText.setFillColor(sf::Color::Yellow);
@@ -85,6 +85,9 @@ void Game::update(float deltaTime)
         return;
     }
 
+    auto previousPlatform = level.getFerryBounds();
+    float shiftX = level.moveFerry(deltaTime);
+    player.followPlatform(previousPlatform, shiftX);
     std::vector<sf::FloatRect> surfaces = level.getSurfaceBounds();
     player.update(deltaTime, surfaces);
 

@@ -32,6 +32,7 @@ public:
     sf::Vector2f getPosition() const;
     sf::FloatRect getBounds() const;
     bool isOnGround() const;
+    void followPlatform(const sf::FloatRect& previousBounds, float shiftX);
     void handleEvent(const sf::Event& event);
     void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces);
     void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction);

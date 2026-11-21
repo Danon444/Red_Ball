@@ -56,6 +56,33 @@ bool Ball::isOnGround() const
     return onGround;
 }
 
+void Ball::followPlatform(const sf::FloatRect& previousBounds, float shiftX)
+{
+    auto ball = getBounds();
+    float left = previousBounds.position.x;
+    float right = left + previousBounds.size.x;
+    float top = previousBounds.position.y;
+    float ballRight = position.x + ball.size.x;
+    float ballBottom = position.y + ball.size.y;
+
+    if (onGround && std::abs(ballBottom - top) < 0.01f && position.x < right && ballRight > left)
+    {
+        position.x += shiftX;
+    }
+    else if (ballBottom > top && position.y < top + previousBounds.size.y)
+    {
+        // A moving side can reach the ball even when the player is standing still.
+        if (position.x >= right && position.x < right + shiftX)
+        {
+            position.x = right + shiftX;
+        }
+        else if (ballRight <= left && ballRight > left + shiftX)
+        {
+            position.x = left + shiftX - ball.size.x;
+        }
+    }
+}
+
 void Ball::handleEvent(const sf::Event& event)
 {
     if (const auto* key = event.getIf<sf::Event::KeyPressed>())

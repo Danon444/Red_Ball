@@ -1,4 +1,5 @@
 #include "Level.h"
+#include <cmath>
 
 Level::Level()
 {
@@ -16,7 +17,8 @@ Level::Level()
     addSurface({3220.f, 500.f}, {580.f, 400.f}, earth);
 
     // A suspended bridge, another resting place, and the final ascent.
-    addSurface({3900.f, 450.f}, {200.f, 24.f}, earth);
+    ferryIndex = surfaces.size();
+    addSurface({ferryStartX, 450.f}, {180.f, 24.f}, sf::Color(36, 115, 141));
     addSurface({4180.f, 380.f}, {200.f, 24.f}, earth);
     addSurface({4460.f, 310.f}, {220.f, 24.f}, earth);
     addSurface({4760.f, 380.f}, {220.f, 24.f}, earth);
@@ -95,7 +97,14 @@ void Level::draw(sf::RenderWindow& window) const
         window.draw(surface);
         sf::RectangleShape grass({surface.getSize().x, 8.f});
         grass.setPosition(surface.getPosition());
-        grass.setFillColor(sf::Color(90, 155, 75));
+        if (&surface == &surfaces[ferryIndex])
+        {
+            grass.setFillColor(sf::Color(255, 202, 84));
+        }
+        else
+        {
+            grass.setFillColor(sf::Color(90, 155, 75));
+        }
         window.draw(grass);
     }
 
@@ -133,6 +142,25 @@ void Level::activateCheckpoint()
 
 void Level::reset()
 {
+    ferryTime = 0.f;
+    surfaces[ferryIndex].setPosition({ferryStartX, 450.f});
     checkpointActive = false;
     checkpointFlag.setFillColor(sf::Color(100, 150, 240));
+}
+
+sf::FloatRect Level::getFerryBounds() const
+{
+    return surfaces[ferryIndex].getGlobalBounds();
+}
+
+float Level::moveFerry(float deltaTime)
+{
+    constexpr float period = 5.f;
+    constexpr float fullTurn = 6.2831853f;
+    ferryTime = std::fmod(ferryTime + deltaTime, period);
+    float previousX = surfaces[ferryIndex].getPosition().x;
+    // Cosine slows the platform down as it approaches each end.
+    float x = ferryStartX + 60.f * (1.f - std::cos(fullTurn * ferryTime / period));
+    surfaces[ferryIndex].setPosition({x, 450.f});
+    return x - previousX;
 }

@@ -14,12 +14,13 @@ void traverse(float step)
 {
     Level level;
     Ball ball;
-    const auto surfaces = level.getSurfaceBounds();
+    auto surfaces = level.getSurfaceBounds();
     std::size_t platform = 0;
     bool checkpointSeen = false;
     bool finished = false;
     for (int frame = 0; frame < static_cast<int>(90.f / step); ++frame)
     {
+        float direction = 1.f;
         if (ball.isOnGround())
         {
             const auto bounds = ball.getBounds();
@@ -37,12 +38,27 @@ void traverse(float step)
             float edge = surfaces[platform].position.x + surfaces[platform].size.x;
             if (platform + 1 < surfaces.size() && bounds.position.x >= edge - 80.f)
             {
-                sf::Event::KeyPressed key{};
-                key.code = sf::Keyboard::Key::Space;
-                ball.handleEvent(sf::Event(key));
+                auto ferry = level.getFerryBounds();
+                bool boarding = surfaces[platform + 1].position == ferry.position;
+                bool leaving = surfaces[platform].position == ferry.position;
+                float gap = surfaces[platform + 1].position.x - edge;
+                if ((boarding || leaving) && gap > 75.f)
+                {
+                    direction = 0.f;
+                }
+                else
+                {
+                    sf::Event::KeyPressed key{};
+                    key.code = sf::Keyboard::Key::Space;
+                    ball.handleEvent(sf::Event(key));
+                }
             }
         }
-        ball.update(step, surfaces, 1.f);
+        auto previousPlatform = level.getFerryBounds();
+        float shiftX = level.moveFerry(step);
+        ball.followPlatform(previousPlatform, shiftX);
+        surfaces = level.getSurfaceBounds();
+        ball.update(step, surfaces, direction);
         if (ball.getPosition().y > level.getDeathY())
         {
             std::cerr << "Fall after platform " << platform << " at x=" << ball.getPosition().x << '\n';
