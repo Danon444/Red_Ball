@@ -24,7 +24,7 @@ private:
     sf::Text victoryText;
     sf::Text statusText;
     sf::View camera;
-    sf::Vector2f respawnPosition{100.f, 100.f};
+    sf::Vector2f respawnPosition;
     bool checkpointReached = false;
 
     void processEvents();

@@ -7,7 +7,8 @@ Game::Game()
       font("assets/fonts/arial.ttf"),
       victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36),
       statusText(font, "", 18),
-      camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f}))
+      camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f})),
+      respawnPosition(level.getSpawn())
 {
     window.setKeyRepeatEnabled(false); // запрещает автоповтор событий при удержании клавиши
     window.setFramerateLimit(120);
@@ -17,6 +18,7 @@ Game::Game()
     victoryText.setPosition({550.f, 350.f});
     statusText.setPosition({16.f, 12.f});
     statusText.setFillColor(sf::Color(30, 45, 55));
+    player.reset(respawnPosition);
     updateCamera();
 }
 
@@ -63,10 +65,10 @@ void Game::processEvents()
             {
                 if (key->code == sf::Keyboard::Key::Enter)
                 {
-                    player.reset();
                     level.reset();
                     checkpointReached = false;
-                    respawnPosition = {100.f, 100.f};
+                    respawnPosition = level.getSpawn();
+                    player.reset(respawnPosition);
                     state = State::Playing;
                 }
             }
@@ -85,9 +87,7 @@ void Game::update(float deltaTime)
         return;
     }
 
-    auto previousPlatform = level.getFerryBounds();
-    float shiftX = level.moveFerry(deltaTime);
-    player.followPlatform(previousPlatform, shiftX);
+    level.updateMovingPlatforms(deltaTime, player);
     std::vector<sf::FloatRect> surfaces = level.getSurfaceBounds();
     player.update(deltaTime, surfaces);
 
@@ -121,7 +121,10 @@ void Game::render()
     player.draw(window);
 
     window.setView(window.getDefaultView());
-    int progress = static_cast<int>(std::clamp(player.getPosition().x / 7550.f, 0.f, 1.f) * 100.f);
+    float startX = level.getSpawn().x;
+    float routeLength = level.getFinishX() - startX;
+    float routeFraction = (player.getPosition().x - startX) / routeLength;
+    int progress = static_cast<int>(std::clamp(routeFraction, 0.f, 1.f) * 100.f);
     std::string message = "A/D or arrows: move | W/Up/Space: jump\nRoute: " + std::to_string(progress) + "%";
     if (checkpointReached)
     {
@@ -148,6 +151,7 @@ void Game::render()
 void Game::updateCamera()
 {
     float centerX = player.getPosition().x + 30.f;
-    centerX = std::clamp(centerX, 550.f, level.getWidth() - 550.f);
+    float margin = std::min(camera.getSize().x / 2.f, level.getWidth() / 2.f);
+    centerX = std::clamp(centerX, margin, level.getWidth() - margin);
     camera.setCenter({centerX, 350.f});
 }

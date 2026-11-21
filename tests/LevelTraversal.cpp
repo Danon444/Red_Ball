@@ -1,5 +1,6 @@
 #include "Ball.h"
 #include "Level.h"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -9,12 +10,23 @@ void require(bool condition, const char* message)
     if (!condition) { throw std::runtime_error(message); }
 }
 
+std::vector<sf::FloatRect> surfacesFromLeftToRight(const Level& level)
+{
+    auto surfaces = level.getSurfaceBounds();
+    std::sort(surfaces.begin(), surfaces.end(), [](const auto& left, const auto& right)
+    {
+        return left.position.x < right.position.x;
+    });
+    return surfaces;
+}
+
 // Drives the real physics with deterministic controls and no window.
 void traverse(float step)
 {
     Level level;
     Ball ball;
-    auto surfaces = level.getSurfaceBounds();
+    ball.reset(level.getSpawn());
+    auto surfaces = surfacesFromLeftToRight(level);
     std::size_t platform = 0;
     bool checkpointSeen = false;
     bool finished = false;
@@ -38,7 +50,7 @@ void traverse(float step)
             float edge = surfaces[platform].position.x + surfaces[platform].size.x;
             if (platform + 1 < surfaces.size() && bounds.position.x >= edge - 80.f)
             {
-                auto ferry = level.getFerryBounds();
+                auto ferry = level.getMovingPlatforms().front().getBounds();
                 bool boarding = surfaces[platform + 1].position == ferry.position;
                 bool leaving = surfaces[platform].position == ferry.position;
                 float gap = surfaces[platform + 1].position.x - edge;
@@ -54,10 +66,8 @@ void traverse(float step)
                 }
             }
         }
-        auto previousPlatform = level.getFerryBounds();
-        float shiftX = level.moveFerry(step);
-        ball.followPlatform(previousPlatform, shiftX);
-        surfaces = level.getSurfaceBounds();
+        level.updateMovingPlatforms(step, ball);
+        surfaces = surfacesFromLeftToRight(level);
         ball.update(step, surfaces, direction);
         if (ball.getPosition().y > level.getDeathY())
         {
@@ -73,8 +83,8 @@ void traverse(float step)
     require(ball.isOnGround(), "Checkpoint respawn has no support");
     require(std::abs(ball.getPosition().x - respawnX) < 0.01f, "Respawn retained horizontal momentum");
     require(!ball.getBounds().findIntersection(level.getFinishBounds()), "Checkpoint overlaps finish");
-    ball.reset();
-    require(ball.getPosition().x == 100.f, "Full restart did not return to the start");
+    ball.reset(level.getSpawn());
+    require(ball.getPosition() == level.getSpawn(), "Full restart did not return to the start");
 }
 
 int main()

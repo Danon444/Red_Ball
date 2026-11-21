@@ -1,48 +1,111 @@
 #include "Level.h"
+#include "Ball.h"
+
 #include <cmath>
+#include <fstream>
+#include <nlohmann/json.hpp>
+#include <stdexcept>
+#include <string>
 
-Level::Level()
+namespace
 {
-    const sf::Color earth(150, 105, 70);
-    // A wide start, then small gaps and a gradual climb.
-    addSurface({0.f, 500.f}, {680.f, 400.f}, earth);
-    addSurface({780.f, 500.f}, {380.f, 400.f}, earth);
-    addSurface({1260.f, 460.f}, {300.f, 440.f}, earth);
-    addSurface({1640.f, 390.f}, {280.f, 510.f}, earth);
-    addSurface({2000.f, 320.f}, {320.f, 580.f}, earth);
-    addSurface({2400.f, 390.f}, {280.f, 24.f}, earth);
-    addSurface({2760.f, 460.f}, {360.f, 440.f}, earth);
+using nlohmann::json;
 
-    // A safe resting place and checkpoint halfway through the route.
-    addSurface({3220.f, 500.f}, {580.f, 400.f}, earth);
+float readNumber(const json& object, const char* key)
+{
+    const auto& value = object.at(key);
+    if (!value.is_number())
+    {
+        throw std::runtime_error(std::string(key) + " must be a number");
+    }
+    float number = value.get<float>();
+    if (!std::isfinite(number))
+    {
+        throw std::runtime_error(std::string(key) + " is outside the supported range");
+    }
+    return number;
+}
 
-    // A suspended bridge, another resting place, and the final ascent.
-    ferryIndex = surfaces.size();
-    addSurface({ferryStartX, 450.f}, {180.f, 24.f}, sf::Color(36, 115, 141));
-    addSurface({4180.f, 380.f}, {200.f, 24.f}, earth);
-    addSurface({4460.f, 310.f}, {220.f, 24.f}, earth);
-    addSurface({4760.f, 380.f}, {220.f, 24.f}, earth);
-    addSurface({5060.f, 450.f}, {320.f, 24.f}, earth);
-    addSurface({5480.f, 500.f}, {400.f, 400.f}, earth);
-    addSurface({5980.f, 430.f}, {220.f, 470.f}, earth);
-    addSurface({6280.f, 350.f}, {220.f, 550.f}, earth);
-    addSurface({6580.f, 280.f}, {220.f, 620.f}, earth);
-    addSurface({6880.f, 350.f}, {320.f, 24.f}, earth);
-    addSurface({7280.f, 420.f}, {520.f, 480.f}, earth);
+float readPositive(const json& object, const char* key)
+{
+    float number = readNumber(object, key);
+    if (number <= 0.f)
+    {
+        throw std::runtime_error(std::string(key) + " must be greater than zero");
+    }
+    return number;
+}
+
+sf::Vector2f readPoint(const json& object)
+{
+    return {readNumber(object, "x"), readNumber(object, "y")};
+}
+
+sf::FloatRect readSurface(const json& object)
+{
+    return {readPoint(object), {readPositive(object, "width"), readPositive(object, "height")}};
+}
+}
+
+Level::Level(const std::filesystem::path& path)
+{
+    sf::Vector2f checkpointBase;
+    sf::Vector2f finishBase;
+    try
+    {
+        std::ifstream input(path);
+        if (!input)
+        {
+            throw std::runtime_error("could not open file");
+        }
+
+        const auto data = json::parse(input);
+        width = readPositive(data, "width");
+        deathY = readPositive(data, "deathY");
+        spawn = readPoint(data.at("spawn"));
+        const auto& checkpoint = data.at("checkpoint");
+        checkpointBase = readPoint(checkpoint.at("base"));
+        checkpointSpawn = readPoint(checkpoint.at("spawn"));
+        finishBase = readPoint(data.at("finish"));
+        if (finishBase.x <= spawn.x)
+        {
+            throw std::runtime_error("finish.x must be to the right of spawn.x");
+        }
+
+        const sf::Color earth(150, 105, 70);
+        for (const auto& surface : data.at("surfaces").get_ref<const json::array_t&>())
+        {
+            auto bounds = readSurface(surface);
+            addSurface(bounds.position, bounds.size, earth);
+        }
+
+        if (data.contains("movingPlatforms"))
+        {
+            for (const auto& surface : data.at("movingPlatforms").get_ref<const json::array_t&>())
+            {
+                movingPlatforms.emplace_back(readSurface(surface), readNumber(surface, "endX"),
+                                             readPositive(surface, "period"));
+            }
+        }
+    }
+    catch (const std::exception& error)
+    {
+        throw std::runtime_error("Cannot load level " + path.string() + ": " + error.what());
+    }
 
     checkpointPole.setSize({5.f, 70.f});
-    checkpointPole.setPosition({3500.f, 430.f});
+    checkpointPole.setPosition(checkpointBase - sf::Vector2f{0.f, checkpointPole.getSize().y});
     checkpointPole.setFillColor(sf::Color::White);
     checkpointFlag.setSize({36.f, 24.f});
-    checkpointFlag.setPosition({3505.f, 430.f});
+    checkpointFlag.setPosition(checkpointPole.getPosition() + sf::Vector2f{checkpointPole.getSize().x, 0.f});
     reset();
 
     finishPole.setSize({5.f, 60.f});
-    finishPole.setPosition({7550.f, 360.f});
+    finishPole.setPosition(finishBase - sf::Vector2f{0.f, finishPole.getSize().y});
     finishPole.setFillColor(sf::Color::White);
 
     finishFlag.setSize({35.f, 20.f});
-    finishFlag.setPosition({7555.f, 360.f});
+    finishFlag.setPosition(finishPole.getPosition() + sf::Vector2f{finishPole.getSize().x, 0.f});
     finishFlag.setFillColor(sf::Color::Yellow);
 }
 
@@ -57,10 +120,16 @@ void Level::addSurface(sf::Vector2f position, sf::Vector2f size, sf::Color color
 std::vector<sf::FloatRect> Level::getSurfaceBounds() const
 {
     std::vector<sf::FloatRect> bounds;
+    bounds.reserve(surfaces.size() + movingPlatforms.size());
 
     for (const sf::RectangleShape& surface : surfaces)
     {
         bounds.push_back(surface.getGlobalBounds());
+    }
+
+    for (const auto& platform : movingPlatforms)
+    {
+        bounds.push_back(platform.getBounds());
     }
 
     return bounds;
@@ -97,15 +166,13 @@ void Level::draw(sf::RenderWindow& window) const
         window.draw(surface);
         sf::RectangleShape grass({surface.getSize().x, 8.f});
         grass.setPosition(surface.getPosition());
-        if (&surface == &surfaces[ferryIndex])
-        {
-            grass.setFillColor(sf::Color(255, 202, 84));
-        }
-        else
-        {
-            grass.setFillColor(sf::Color(90, 155, 75));
-        }
+        grass.setFillColor(sf::Color(90, 155, 75));
         window.draw(grass);
+    }
+
+    for (const auto& platform : movingPlatforms)
+    {
+        platform.draw(window);
     }
 
     window.draw(checkpointPole);
@@ -116,51 +183,60 @@ void Level::draw(sf::RenderWindow& window) const
 
 sf::FloatRect Level::getCheckpointBounds() const
 {
-    return {{3480.f, 430.f}, {50.f, 70.f}};
+    const auto pole = checkpointPole.getPosition();
+    return {{pole.x - 20.f, pole.y}, {50.f, checkpointPole.getSize().y}};
 }
 
 sf::Vector2f Level::getCheckpointSpawn() const
 {
-    return {3440.f, 440.f};
+    return checkpointSpawn;
+}
+
+sf::Vector2f Level::getSpawn() const
+{
+    return spawn;
+}
+
+float Level::getFinishX() const
+{
+    return finishPole.getPosition().x;
 }
 
 float Level::getWidth() const
 {
-    return 7800.f;
+    return width;
 }
 
 float Level::getDeathY() const
 {
-    return 700.f;
+    return deathY;
 }
 
 void Level::activateCheckpoint()
 {
-    checkpointActive = true;
     checkpointFlag.setFillColor(sf::Color(80, 240, 110));
 }
 
 void Level::reset()
 {
-    ferryTime = 0.f;
-    surfaces[ferryIndex].setPosition({ferryStartX, 450.f});
-    checkpointActive = false;
+    for (auto& platform : movingPlatforms)
+    {
+        platform.reset();
+    }
     checkpointFlag.setFillColor(sf::Color(100, 150, 240));
 }
 
-sf::FloatRect Level::getFerryBounds() const
+const std::vector<MovingPlatform>& Level::getMovingPlatforms() const
 {
-    return surfaces[ferryIndex].getGlobalBounds();
+    return movingPlatforms;
 }
 
-float Level::moveFerry(float deltaTime)
+void Level::updateMovingPlatforms(float deltaTime, Ball& player)
 {
-    constexpr float period = 5.f;
-    constexpr float fullTurn = 6.2831853f;
-    ferryTime = std::fmod(ferryTime + deltaTime, period);
-    float previousX = surfaces[ferryIndex].getPosition().x;
-    // Cosine slows the platform down as it approaches each end.
-    float x = ferryStartX + 60.f * (1.f - std::cos(fullTurn * ferryTime / period));
-    surfaces[ferryIndex].setPosition({x, 450.f});
-    return x - previousX;
+    for (auto& platform : movingPlatforms)
+    {
+        auto previousBounds = platform.getBounds();
+        float shiftX = platform.update(deltaTime);
+        player.followPlatform(previousBounds, shiftX);
+    }
 }

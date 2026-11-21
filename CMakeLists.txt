@@ -18,6 +18,12 @@ FetchContent_Declare(SFML
 
 FetchContent_MakeAvailable(SFML)
 
+FetchContent_Declare(nlohmann_json
+    URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # Исправление для MinGW, если в пути к проекту есть пробелы.
 if(MINGW)
     if(TARGET freetype)
@@ -32,6 +38,7 @@ set(REDBALL_SOURCES
     src/Ball.cpp
     src/Game.cpp
     src/Level.cpp
+    src/MovingPlatform.cpp
 )
 
 if(WIN32)
@@ -42,6 +49,7 @@ else()
     target_link_libraries(RedBall PRIVATE SFML::Graphics)
 endif()
 target_include_directories(RedBall PRIVATE include)
+target_link_libraries(RedBall PRIVATE nlohmann_json::nlohmann_json)
 
 add_custom_target(RedBallAssets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
@@ -58,10 +66,14 @@ if(REDBALL_BUILD_CHECKS)
         tests/LevelTraversal.cpp 
         src/Ball.cpp 
         src/Level.cpp
+        src/MovingPlatform.cpp
     )
     target_include_directories(LevelTraversalCheck PRIVATE include)
-    target_link_libraries(LevelTraversalCheck PRIVATE SFML::Graphics)
+    target_link_libraries(LevelTraversalCheck PRIVATE SFML::Graphics nlohmann_json::nlohmann_json)
     add_test(NAME LevelTraversal COMMAND LevelTraversalCheck)
-    set_tests_properties(LevelTraversal PROPERTIES TIMEOUT 30)
+    set_tests_properties(LevelTraversal PROPERTIES
+        TIMEOUT 30
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
 endif()
 

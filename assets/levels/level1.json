@@ -1,0 +1,33 @@
+{
+  "width": 7800,
+  "deathY": 700,
+  "spawn": { "x": 100, "y": 100 },
+  "checkpoint": {
+    "base": { "x": 3500, "y": 500 },
+    "spawn": { "x": 3440, "y": 440 }
+  },
+  "finish": { "x": 7550, "y": 420 },
+  "surfaces": [
+    { "x": 0, "y": 500, "width": 680, "height": 400 },
+    { "x": 780, "y": 500, "width": 380, "height": 400 },
+    { "x": 1260, "y": 460, "width": 300, "height": 440 },
+    { "x": 1640, "y": 390, "width": 280, "height": 510 },
+    { "x": 2000, "y": 320, "width": 320, "height": 580 },
+    { "x": 2400, "y": 390, "width": 280, "height": 24 },
+    { "x": 2760, "y": 460, "width": 360, "height": 440 },
+    { "x": 3220, "y": 500, "width": 580, "height": 400 },
+    { "x": 4180, "y": 380, "width": 200, "height": 24 },
+    { "x": 4460, "y": 310, "width": 220, "height": 24 },
+    { "x": 4760, "y": 380, "width": 220, "height": 24 },
+    { "x": 5060, "y": 450, "width": 320, "height": 24 },
+    { "x": 5480, "y": 500, "width": 400, "height": 400 },
+    { "x": 5980, "y": 430, "width": 220, "height": 470 },
+    { "x": 6280, "y": 350, "width": 220, "height": 550 },
+    { "x": 6580, "y": 280, "width": 220, "height": 620 },
+    { "x": 6880, "y": 350, "width": 320, "height": 24 },
+    { "x": 7280, "y": 420, "width": 520, "height": 480 }
+  ],
+  "movingPlatforms": [
+    { "x": 3860, "y": 450, "width": 180, "height": 24, "endX": 3980, "period": 5 }
+  ]
+}
