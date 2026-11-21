@@ -4,6 +4,9 @@
 
 Game::Game()
     : window(sf::VideoMode({1100, 700}), "Red Ball"),
+      // Use the visible part of each PNG so the art reaches the ground.
+      ballTexture("assets/sprites/ball.png", false, {{23, 46}, {1183, 1187}}),
+      enemyTexture("assets/sprites/enemy.png", false, {{87, 117}, {1081, 1044}}),
       font("assets/fonts/arial.ttf"),
       victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36),
       statusText(font, "", 18),
@@ -12,6 +15,12 @@ Game::Game()
 {
     window.setKeyRepeatEnabled(false); // запрещает автоповтор событий при удержании клавиши
     window.setFramerateLimit(120);
+    ballTexture.setSmooth(true);
+    enemyTexture.setSmooth(true);
+    (void)ballTexture.generateMipmap();
+    (void)enemyTexture.generateMipmap();
+    player.setTexture(ballTexture);
+    level.setEnemyTexture(enemyTexture);
 
     victoryText.setFillColor(sf::Color::Yellow);
     victoryText.setOrigin(victoryText.getLocalBounds().getCenter());
@@ -87,13 +96,19 @@ void Game::update(float deltaTime)
         return;
     }
 
+    auto previousPlayerBounds = player.getBounds();
     level.updateMovingPlatforms(deltaTime, player);
     std::vector<sf::FloatRect> surfaces = level.getSurfaceBounds();
     player.update(deltaTime, surfaces);
+    bool hitEnemy = level.updateEnemies(deltaTime, player, previousPlayerBounds);
 
-    if (player.getPosition().y > level.getDeathY() ||
-        player.getPosition().x < -60.f || player.getPosition().x > level.getWidth())
+    if (hitEnemy || player.getPosition().y > level.getDeathY() ||
+        player.getPosition().x < -60.f)
     {
+        if (!checkpointReached)
+        {
+            level.resetEnemies();
+        }
         player.reset(respawnPosition);
         return;
     }
@@ -106,8 +121,7 @@ void Game::update(float deltaTime)
         level.activateCheckpoint();
     }
 
-    if (player.isOnGround() &&
-        player.getBounds().findIntersection(level.getFinishBounds()))
+    if (level.hasReachedExit(player.getPosition().x))
     {
         state = State::Won;
     }
@@ -122,7 +136,7 @@ void Game::render()
 
     window.setView(window.getDefaultView());
     float startX = level.getSpawn().x;
-    float routeLength = level.getFinishX() - startX;
+    float routeLength = level.getWidth() - startX;
     float routeFraction = (player.getPosition().x - startX) / routeLength;
     int progress = static_cast<int>(std::clamp(routeFraction, 0.f, 1.f) * 100.f);
     std::string message = "A/D or arrows: move | W/Up/Space: jump\nRoute: " + std::to_string(progress) + "%";

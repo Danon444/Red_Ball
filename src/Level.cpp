@@ -50,7 +50,6 @@ sf::FloatRect readSurface(const json& object)
 Level::Level(const std::filesystem::path& path)
 {
     sf::Vector2f checkpointBase;
-    sf::Vector2f finishBase;
     try
     {
         std::ifstream input(path);
@@ -66,10 +65,9 @@ Level::Level(const std::filesystem::path& path)
         const auto& checkpoint = data.at("checkpoint");
         checkpointBase = readPoint(checkpoint.at("base"));
         checkpointSpawn = readPoint(checkpoint.at("spawn"));
-        finishBase = readPoint(data.at("finish"));
-        if (finishBase.x <= spawn.x)
+        if (spawn.x >= width)
         {
-            throw std::runtime_error("finish.x must be to the right of spawn.x");
+            throw std::runtime_error("spawn.x must be to the left of the level exit");
         }
 
         const sf::Color earth(150, 105, 70);
@@ -87,6 +85,20 @@ Level::Level(const std::filesystem::path& path)
                                              readPositive(surface, "period"));
             }
         }
+
+        if (data.contains("enemies"))
+        {
+            for (const auto& enemy : data.at("enemies").get_ref<const json::array_t&>())
+            {
+                auto position = readPoint(enemy);
+                float endX = readNumber(enemy, "endX");
+                if (endX <= position.x)
+                {
+                    throw std::runtime_error("Enemy endX must be to the right of its start x");
+                }
+                enemies.emplace_back(position, endX, readPositive(enemy, "speed"));
+            }
+        }
     }
     catch (const std::exception& error)
     {
@@ -99,14 +111,6 @@ Level::Level(const std::filesystem::path& path)
     checkpointFlag.setSize({36.f, 24.f});
     checkpointFlag.setPosition(checkpointPole.getPosition() + sf::Vector2f{checkpointPole.getSize().x, 0.f});
     reset();
-
-    finishPole.setSize({5.f, 60.f});
-    finishPole.setPosition(finishBase - sf::Vector2f{0.f, finishPole.getSize().y});
-    finishPole.setFillColor(sf::Color::White);
-
-    finishFlag.setSize({35.f, 20.f});
-    finishFlag.setPosition(finishPole.getPosition() + sf::Vector2f{finishPole.getSize().x, 0.f});
-    finishFlag.setFillColor(sf::Color::Yellow);
 }
 
 void Level::addSurface(sf::Vector2f position, sf::Vector2f size, sf::Color color)
@@ -135,12 +139,9 @@ std::vector<sf::FloatRect> Level::getSurfaceBounds() const
     return bounds;
 }
 
-sf::FloatRect Level::getFinishBounds() const
+bool Level::hasReachedExit(float playerLeftX) const
 {
-    sf::Vector2f position = finishPole.getPosition();
-    position.x -= 4.f;
-    position.y += finishPole.getSize().y - 12.f;
-    return {position, {13.f, 12.f}};
+    return playerLeftX >= width;
 }
 
 void Level::draw(sf::RenderWindow& window) const
@@ -175,10 +176,13 @@ void Level::draw(sf::RenderWindow& window) const
         platform.draw(window);
     }
 
+    for (const auto& enemy : enemies)
+    {
+        enemy.draw(window);
+    }
+
     window.draw(checkpointPole);
     window.draw(checkpointFlag);
-    window.draw(finishPole);
-    window.draw(finishFlag);
 }
 
 sf::FloatRect Level::getCheckpointBounds() const
@@ -197,11 +201,6 @@ sf::Vector2f Level::getSpawn() const
     return spawn;
 }
 
-float Level::getFinishX() const
-{
-    return finishPole.getPosition().x;
-}
-
 float Level::getWidth() const
 {
     return width;
@@ -217,12 +216,29 @@ void Level::activateCheckpoint()
     checkpointFlag.setFillColor(sf::Color(80, 240, 110));
 }
 
+void Level::setEnemyTexture(const sf::Texture& texture)
+{
+    for (auto& enemy : enemies)
+    {
+        enemy.setTexture(texture);
+    }
+}
+
+void Level::resetEnemies()
+{
+    for (auto& enemy : enemies)
+    {
+        enemy.reset();
+    }
+}
+
 void Level::reset()
 {
     for (auto& platform : movingPlatforms)
     {
         platform.reset();
     }
+    resetEnemies();
     checkpointFlag.setFillColor(sf::Color(100, 150, 240));
 }
 
@@ -239,4 +255,37 @@ void Level::updateMovingPlatforms(float deltaTime, Ball& player)
         float shiftX = platform.update(deltaTime);
         player.followPlatform(previousBounds, shiftX);
     }
+}
+
+bool Level::updateEnemies(float deltaTime, Ball& player, const sf::FloatRect& previousPlayerBounds)
+{
+    for (auto& enemy : enemies)
+    {
+        if (!enemy.isActive())
+        {
+            continue;
+        }
+
+        enemy.update(deltaTime);
+        auto playerBounds = player.getBounds();
+        auto enemyBounds = enemy.getBounds();
+        if (!playerBounds.findIntersection(enemyBounds))
+        {
+            continue;
+        }
+
+        float previousBottom = previousPlayerBounds.position.y + previousPlayerBounds.size.y;
+        float currentBottom = playerBounds.position.y + playerBounds.size.y;
+        float enemyTop = enemyBounds.position.y;
+        if (previousBottom <= enemyTop && currentBottom > enemyTop)
+        {
+            enemy.squash();
+            player.bounceFromEnemy(enemyTop);
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
 }

@@ -5,14 +5,17 @@
 
 Ball::Ball()
 {
-    shape.setRadius(radius);
-    shape.setOrigin({radius, radius});
-    shape.setFillColor(sf::Color::Red);
-
-    stripe.setSize({radius * 1.4f, 6.f});
-    stripe.setOrigin(stripe.getSize() / 2.f);
-    stripe.setFillColor(sf::Color(255, 220, 150));
     reset();
+}
+
+void Ball::setTexture(const sf::Texture& texture)
+{
+    sprite.emplace(texture);
+    auto size = sf::Vector2f(texture.getSize());
+    float diameter = radius * 2.f;
+    sprite->setOrigin(size / 2.f);
+    sprite->setScale({diameter / size.x, diameter / size.y});
+    syncVisuals();
 }
 
 void Ball::reset()
@@ -44,16 +47,24 @@ sf::FloatRect Ball::getBounds() const
 
 void Ball::syncVisuals()
 {
-    sf::Vector2f center = position + sf::Vector2f{radius, radius};
-    shape.setPosition(center);
-    stripe.setPosition(center);
-    shape.setRotation(sf::degrees(rotationDegrees));
-    stripe.setRotation(sf::degrees(rotationDegrees));
+    if (sprite)
+    {
+        sprite->setPosition(position + sf::Vector2f{radius, radius});
+        sprite->setRotation(sf::degrees(rotationDegrees));
+    }
 }
 
 bool Ball::isOnGround() const
 {
     return onGround;
+}
+
+void Ball::bounceFromEnemy(float enemyTop)
+{
+    position.y = enemyTop - radius * 2.f;
+    velocityY = -300.f;
+    onGround = false;
+    syncVisuals();
 }
 
 void Ball::followPlatform(const sf::FloatRect& previousBounds, float shiftX)
@@ -274,7 +285,9 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, f
 
 void Ball::draw(sf::RenderWindow& window) const
 {
-    window.draw(shape);
-    window.draw(stripe);
+    if (sprite)
+    {
+        window.draw(*sprite);
+    }
 }
 

@@ -46,7 +46,6 @@ void traverse(float step)
                 }
             }
             if (bounds.findIntersection(level.getCheckpointBounds())) { checkpointSeen = true; }
-            if (bounds.findIntersection(level.getFinishBounds())) { finished = true; break; }
             float edge = surfaces[platform].position.x + surfaces[platform].size.x;
             if (platform + 1 < surfaces.size() && bounds.position.x >= edge - 80.f)
             {
@@ -74,6 +73,11 @@ void traverse(float step)
             std::cerr << "Fall after platform " << platform << " at x=" << ball.getPosition().x << '\n';
             throw std::runtime_error("The route could not be traversed");
         }
+        if (level.hasReachedExit(ball.getPosition().x))
+        {
+            finished = true;
+            break;
+        }
     }
     require(checkpointSeen, "Checkpoint was missed");
     require(finished, "Finish was not reached");
@@ -82,7 +86,7 @@ void traverse(float step)
     for (int i = 0; i < 120; ++i) { ball.update(1.f / 120.f, surfaces, 0.f); }
     require(ball.isOnGround(), "Checkpoint respawn has no support");
     require(std::abs(ball.getPosition().x - respawnX) < 0.01f, "Respawn retained horizontal momentum");
-    require(!ball.getBounds().findIntersection(level.getFinishBounds()), "Checkpoint overlaps finish");
+    require(!level.hasReachedExit(ball.getPosition().x), "Checkpoint is outside the exit");
     ball.reset(level.getSpawn());
     require(ball.getPosition() == level.getSpawn(), "Full restart did not return to the start");
 }

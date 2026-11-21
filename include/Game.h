@@ -15,6 +15,8 @@ private:
 
     State state = State::Playing;
     sf::RenderWindow window;
+    sf::Texture ballTexture;
+    sf::Texture enemyTexture;
     Ball player;
 
     Level level;

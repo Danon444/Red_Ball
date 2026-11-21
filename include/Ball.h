@@ -1,13 +1,13 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <optional>
 #include <vector>
 
 class Ball
 {
 private:
-    sf::CircleShape shape;
-    sf::RectangleShape stripe;
+    std::optional<sf::Sprite> sprite;
     sf::Vector2f spawnPosition{100.f, 100.f};
     sf::Vector2f position;
     float radius = 30.f;
@@ -27,11 +27,13 @@ private:
     void syncVisuals();
 public:
     Ball();
+    void setTexture(const sf::Texture& texture);
     void reset();
     void reset(sf::Vector2f newPosition);
     sf::Vector2f getPosition() const;
     sf::FloatRect getBounds() const;
     bool isOnGround() const;
+    void bounceFromEnemy(float enemyTop);
     void followPlatform(const sf::FloatRect& previousBounds, float shiftX);
     void handleEvent(const sf::Event& event);
     void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces);

@@ -36,6 +36,7 @@ endif()
 set(REDBALL_SOURCES
     src/main.cpp
     src/Ball.cpp
+    src/Enemy.cpp
     src/Game.cpp
     src/Level.cpp
     src/MovingPlatform.cpp
@@ -65,6 +66,7 @@ if(REDBALL_BUILD_CHECKS)
     add_executable(LevelTraversalCheck 
         tests/LevelTraversal.cpp 
         src/Ball.cpp 
+        src/Enemy.cpp
         src/Level.cpp
         src/MovingPlatform.cpp
     )
