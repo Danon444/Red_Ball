@@ -78,6 +78,11 @@ Level::Level(const std::filesystem::path& path)
             addSurface(bounds.position, bounds.size, earth);
         }
 
+        if (data.contains("crate"))
+        {
+            crate.emplace(readSurface(data.at("crate")));
+        }
+
         if (data.contains("movingPlatforms"))
         {
             for (const auto& surface : data.at("movingPlatforms").get_ref<const json::array_t&>())
@@ -182,6 +187,11 @@ void Level::draw(sf::RenderWindow& window) const
         enemy.draw(window);
     }
 
+    if (crate)
+    {
+        crate->draw(window);
+    }
+
     window.draw(checkpointPole);
     window.draw(checkpointFlag);
 }
@@ -235,12 +245,25 @@ void Level::resetEnemies()
 
 void Level::reset()
 {
+    if (crate)
+    {
+        crate->reset();
+    }
     for (auto& platform : movingPlatforms)
     {
         platform.reset();
     }
     resetEnemies();
     checkpointFlag.setFillColor(sf::Color(100, 150, 240));
+}
+
+Crate* Level::getCrate()
+{
+    if (crate)
+    {
+        return &*crate;
+    }
+    return nullptr;
 }
 
 const std::vector<MovingPlatform>& Level::getMovingPlatforms() const

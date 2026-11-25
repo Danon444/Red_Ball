@@ -1,4 +1,5 @@
 #include "../include/Ball.h"
+#include "Crate.h"
 
 #include <algorithm>
 #include <cmath>
@@ -164,7 +165,7 @@ void Ball::handleEvent(const sf::Event& event)
     }
 }
 
-void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
+void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, Crate* crate)
 {
     float direction = 0.f;
 
@@ -180,10 +181,11 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces)
         direction += 1.f;
     }
 
-    update(deltaTime, surfaces, direction);
+    update(deltaTime, surfaces, direction, crate);
 }
 
-void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction)
+void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction,
+                  Crate* crate)
 {
     if (direction != 0.f)
     {
@@ -223,13 +225,13 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, f
     {
         onGround = false;
         bool correctedPosition = false;
-        for (const auto& surface : surfaces)
+        auto resolveContact = [&](const sf::FloatRect& surface)
         {
             const auto center = position + sf::Vector2f{radius, radius};
             const auto contact = circleContact(center, radius, surface, contactTolerance);
             if (!contact)
             {
-                continue;
+                return;
             }
 
             if (contact->depth > contactTolerance)
@@ -254,6 +256,26 @@ void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, f
                 }
                 // Cancel movement into the surface, leaving motion along it.
                 velocity -= normal * (speedIntoSurface * response);
+            }
+        };
+        for (const auto& surface : surfaces)
+        {
+            resolveContact(surface);
+        }
+        if (crate)
+        {
+            const auto center = position + sf::Vector2f{radius, radius};
+            auto contact = circleContact(center, radius, crate->getBounds(), contactTolerance);
+            if (contact && contact->depth > contactTolerance && std::abs(contact->normal.x) > 0.9f &&
+                velocity.x * contact->normal.x < 0.f)
+            {
+                crate->push(-contact->depth / contact->normal.x, surfaces);
+                contact = circleContact(center, radius, crate->getBounds(), contactTolerance);
+            }
+            // Keep lateral speed when the crate moved far enough to leave only a touch.
+            if (contact && (contact->depth > contactTolerance || std::abs(contact->normal.x) <= 0.9f))
+            {
+                resolveContact(crate->getBounds());
             }
         }
         if (!correctedPosition)

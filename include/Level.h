@@ -2,7 +2,9 @@
 
 #include <SFML/Graphics.hpp>
 #include <filesystem>
+#include <optional>
 #include <vector>
+#include "Crate.h"
 #include "Enemy.h"
 #include "MovingPlatform.h"
 
@@ -14,6 +16,7 @@ private:
     std::vector<sf::RectangleShape> surfaces;
     std::vector<MovingPlatform> movingPlatforms;
     std::vector<Enemy> enemies;
+    std::optional<Crate> crate;
     float width;
     float deathY;
     sf::Vector2f spawn;
@@ -27,6 +30,7 @@ public:
     void updateMovingPlatforms(float deltaTime, Ball& player);
     bool updateEnemies(float deltaTime, Ball& player, const sf::FloatRect& previousPlayerBounds);
     void setEnemyTexture(const sf::Texture& texture);
+    Crate* getCrate();
     const std::vector<MovingPlatform>& getMovingPlatforms() const;
 
     std::vector<sf::FloatRect> getSurfaceBounds() const;

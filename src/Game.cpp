@@ -8,7 +8,7 @@ Game::Game()
       ballTexture("assets/sprites/ball.png", false, {{23, 46}, {1183, 1187}}),
       enemyTexture("assets/sprites/enemy.png", false, {{87, 117}, {1081, 1044}}),
       font("assets/fonts/arial.ttf"),
-      victoryText(font, "LEVEL COMPLETE!\nEnter - restart", 36),
+      victoryText(font, "", 36),
       statusText(font, "", 18),
       camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f})),
       respawnPosition(level.getSpawn())
@@ -23,7 +23,6 @@ Game::Game()
     level.setEnemyTexture(enemyTexture);
 
     victoryText.setFillColor(sf::Color::Yellow);
-    victoryText.setOrigin(victoryText.getLocalBounds().getCenter());
     victoryText.setPosition({550.f, 350.f});
     statusText.setPosition({16.f, 12.f});
     statusText.setFillColor(sf::Color(30, 45, 55));
@@ -74,11 +73,13 @@ void Game::processEvents()
             {
                 if (key->code == sf::Keyboard::Key::Enter)
                 {
-                    level.reset();
-                    checkpointReached = false;
-                    respawnPosition = level.getSpawn();
-                    player.reset(respawnPosition);
-                    state = State::Playing;
+                    if (levelNumber == 1)
+                    {
+                        level = Level("assets/levels/level2.json");
+                        level.setEnemyTexture(enemyTexture);
+                        levelNumber = 2;
+                    }
+                    restartLevel();
                 }
             }
         }
@@ -87,6 +88,16 @@ void Game::processEvents()
             player.handleEvent(*event);
         }
     }
+}
+
+void Game::restartLevel()
+{
+    level.reset();
+    checkpointReached = false;
+    respawnPosition = level.getSpawn();
+    player.reset(respawnPosition);
+    state = State::Playing;
+    updateCamera();
 }
 
 void Game::update(float deltaTime)
@@ -99,7 +110,16 @@ void Game::update(float deltaTime)
     auto previousPlayerBounds = player.getBounds();
     level.updateMovingPlatforms(deltaTime, player);
     std::vector<sf::FloatRect> surfaces = level.getSurfaceBounds();
-    player.update(deltaTime, surfaces);
+    auto* crate = level.getCrate();
+    if (crate)
+    {
+        crate->update(deltaTime, surfaces);
+        if (crate->getBounds().position.y > level.getDeathY())
+        {
+            crate->reset();
+        }
+    }
+    player.update(deltaTime, surfaces, crate);
     bool hitEnemy = level.updateEnemies(deltaTime, player, previousPlayerBounds);
 
     if (hitEnemy || player.getPosition().y > level.getDeathY() ||
@@ -108,6 +128,10 @@ void Game::update(float deltaTime)
         if (!checkpointReached)
         {
             level.resetEnemies();
+            if (crate)
+            {
+                crate->reset();
+            }
         }
         player.reset(respawnPosition);
         return;
@@ -123,6 +147,15 @@ void Game::update(float deltaTime)
 
     if (level.hasReachedExit(player.getPosition().x))
     {
+        if (levelNumber == 1)
+        {
+            victoryText.setString("LEVEL 1 COMPLETE!\nEnter - next level");
+        }
+        else
+        {
+            victoryText.setString("LEVEL 2 COMPLETE!\nEnter - replay");
+        }
+        victoryText.setOrigin(victoryText.getLocalBounds().getCenter());
         state = State::Won;
     }
 }
@@ -139,10 +172,15 @@ void Game::render()
     float routeLength = level.getWidth() - startX;
     float routeFraction = (player.getPosition().x - startX) / routeLength;
     int progress = static_cast<int>(std::clamp(routeFraction, 0.f, 1.f) * 100.f);
-    std::string message = "A/D or arrows: move | W/Up/Space: jump\nRoute: " + std::to_string(progress) + "%";
+    std::string message = "A/D or arrows: move | W/Up/Space: jump\nLevel " +
+                          std::to_string(levelNumber) + " | Route: " + std::to_string(progress) + "%";
     if (checkpointReached)
     {
         message += " | Checkpoint saved";
+    }
+    else if (level.getCrate())
+    {
+        message += " | Push the crate to climb the ledge";
     }
     else
     {

@@ -28,7 +28,9 @@ private:
     sf::View camera;
     sf::Vector2f respawnPosition;
     bool checkpointReached = false;
+    int levelNumber = 1;
 
+    void restartLevel();
     void processEvents();
     void update(float deltaTime);
     void render();

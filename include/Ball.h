@@ -4,6 +4,8 @@
 #include <optional>
 #include <vector>
 
+class Crate;
+
 class Ball
 {
 private:
@@ -37,7 +39,8 @@ public:
     void bounceFromEnemy(float enemyTop);
     void followPlatform(const sf::FloatRect& previousBounds, float shiftX);
     void handleEvent(const sf::Event& event);
-    void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces);
-    void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction);
+    void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, Crate* crate = nullptr);
+    void update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, float direction,
+                Crate* crate = nullptr);
     void draw(sf::RenderWindow& window) const;
 };

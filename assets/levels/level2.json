@@ -1,0 +1,18 @@
+{
+  "width": 2450,
+  "deathY": 700,
+  "spawn": { "x": 100, "y": 440 },
+  "checkpoint": {
+    "base": { "x": 920, "y": 344 },
+    "spawn": { "x": 860, "y": 284 }
+  },
+  "crate": { "x": 270, "y": 424, "width": 86, "height": 76 },
+  "surfaces": [
+    { "x": 0, "y": 500, "width": 600, "height": 400 },
+    { "x": 600, "y": 344, "width": 480, "height": 556 },
+    { "x": 1200, "y": 395, "width": 210, "height": 24 },
+    { "x": 1520, "y": 335, "width": 185, "height": 24 },
+    { "x": 1830, "y": 390, "width": 190, "height": 24 },
+    { "x": 2140, "y": 455, "width": 310, "height": 445 }
+  ]
+}
