@@ -11,6 +11,7 @@
 namespace
 {
 using nlohmann::json;
+constexpr float starRadius = 18.f;
 
 float readNumber(const json& object, const char* key)
 {
@@ -46,6 +47,18 @@ sf::FloatRect readSurface(const json& object)
 {
     return {readPoint(object), {readPositive(object, "width"), readPositive(object, "height")}};
 }
+
+Enemy readEnemy(const json& enemy)
+{
+    const auto position = readPoint(enemy);
+    const float endX = readNumber(enemy, "endX");
+    if (endX <= position.x)
+    {
+        throw std::runtime_error("Enemy endX must be to the right of its start x");
+    }
+    return Enemy(position, endX, readPositive(enemy, "speed"));
+}
+
 }
 
 Level::Level(const std::filesystem::path& path)
@@ -96,13 +109,23 @@ Level::Level(const std::filesystem::path& path)
         {
             for (const auto& enemy : data.at("enemies").get_ref<const json::array_t&>())
             {
-                auto position = readPoint(enemy);
-                float endX = readNumber(enemy, "endX");
-                if (endX <= position.x)
+                enemies.push_back(readEnemy(enemy));
+            }
+        }
+
+        if (data.contains("stars"))
+        {
+            const sf::Vector2f halfSize{starRadius, starRadius};
+            for (const auto& point : data.at("stars").get_ref<const json::array_t&>())
+            {
+                const auto center = readPoint(point);
+                std::optional<std::size_t> guardIndex;
+                if (point.contains("guard"))
                 {
-                    throw std::runtime_error("Enemy endX must be to the right of its start x");
+                    guardIndex = enemies.size();
+                    enemies.push_back(readEnemy(point.at("guard")));
                 }
-                enemies.emplace_back(position, endX, readPositive(enemy, "speed"));
+                stars.push_back({{center - halfSize, halfSize * 2.f}, guardIndex});
             }
         }
     }
@@ -150,7 +173,7 @@ bool Level::hasReachedExit(float playerLeftX) const
     return playerLeftX >= width;
 }
 
-void Level::draw(sf::RenderWindow& window) const
+void Level::draw(sf::RenderWindow& window, const sf::Texture& starTexture) const
 {
     // Distant scenery is decorative and never participates in collisions.
     for (int i = 0; i < 14; ++i)
@@ -190,6 +213,22 @@ void Level::draw(sf::RenderWindow& window) const
     if (crate)
     {
         crate->draw(window);
+    }
+
+    const sf::Vector2i frameSize{static_cast<int>(starTexture.getSize().x / 2u),
+                                 static_cast<int>(starTexture.getSize().y)};
+    sf::Sprite starSprite(starTexture);
+    starSprite.setOrigin(sf::Vector2f(frameSize) / 2.f);
+    starSprite.setScale({2.f * starRadius / frameSize.x, 2.f * starRadius / frameSize.y});
+    for (const auto& star : stars)
+    {
+        if (!star.collected)
+        {
+            const int frameX = isStarLocked(star) ? frameSize.x : 0;
+            starSprite.setTextureRect({{frameX, 0}, frameSize});
+            starSprite.setPosition(star.bounds.getCenter());
+            window.draw(starSprite);
+        }
     }
 
     window.draw(checkpointPole);
@@ -253,8 +292,41 @@ void Level::reset()
     {
         platform.reset();
     }
+    for (auto& star : stars)
+    {
+        star.collected = false;
+    }
     resetEnemies();
     checkpointFlag.setFillColor(sf::Color(100, 150, 240));
+}
+
+void Level::collectStars(const Ball& player)
+{
+    for (auto& star : stars)
+    {
+        if (!star.collected && !isStarLocked(star) && player.intersects(star.bounds))
+        {
+            star.collected = true;
+        }
+    }
+}
+
+bool Level::isStarLocked(const Star& star) const
+{
+    return star.guardIndex && enemies[*star.guardIndex].isActive();
+}
+
+std::size_t Level::getStarCount() const
+{
+    return stars.size();
+}
+
+std::size_t Level::getCollectedStars() const
+{
+    return static_cast<std::size_t>(std::count_if(stars.begin(), stars.end(), [](const Star& star)
+    {
+        return star.collected;
+    }));
 }
 
 Crate* Level::getCrate()

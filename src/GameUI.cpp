@@ -3,18 +3,21 @@
 #include <utility>
 
 GameUI::GameUI()
-    : font("assets/fonts/arial.ttf"), heading(font, "", 48), hud(font, "", 18)
+    : font("assets/fonts/arial.ttf"), heading(font, "", 48), menuDetail(font, "", 22), hud(font, "", 18)
 {
     heading.setStyle(sf::Text::Bold);
     heading.setFillColor(sf::Color(255, 238, 207));
+    menuDetail.setFillColor(sf::Color(249, 239, 222));
     hud.setPosition({18.f, 14.f});
     hud.setFillColor(sf::Color(24, 46, 54));
 }
 
-void GameUI::showMenu(const sf::String& title, std::vector<Option> newOptions)
+void GameUI::showMenu(const sf::String& title, std::vector<Option> newOptions, const sf::String& detail)
 {
     heading.setString(title);
     heading.setOrigin(heading.getLocalBounds().getCenter());
+    menuDetail.setString(detail);
+    menuDetail.setOrigin(menuDetail.getLocalBounds().getCenter());
     options = std::move(newOptions);
     selected = 0;
     while (selected < options.size() && !options[selected].enabled)
@@ -111,6 +114,13 @@ void GameUI::drawMenu(sf::RenderWindow& window, bool overlay) const
     auto title = heading;
     title.setPosition({size.x / 2.f, size.y / 2.f - 116.f});
     window.draw(title);
+
+    if (!menuDetail.getString().isEmpty())
+    {
+        auto detail = menuDetail;
+        detail.setPosition({size.x / 2.f, size.y / 2.f - 69.f});
+        window.draw(detail);
+    }
 
     sf::Text label(font, "", 23);
     for (std::size_t i = 0; i < options.size(); ++i)

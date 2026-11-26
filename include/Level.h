@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <vector>
@@ -13,9 +14,17 @@ class Ball;
 class Level
 {
 private:
+    struct Star
+    {
+        sf::FloatRect bounds;
+        std::optional<std::size_t> guardIndex;
+        bool collected = false;
+    };
+
     std::vector<sf::RectangleShape> surfaces;
     std::vector<MovingPlatform> movingPlatforms;
     std::vector<Enemy> enemies;
+    std::vector<Star> stars;
     std::optional<Crate> crate;
     float width;
     float deathY;
@@ -25,10 +34,14 @@ private:
     sf::RectangleShape checkpointFlag;
 
     void addSurface(sf::Vector2f position, sf::Vector2f size, sf::Color color);
+    bool isStarLocked(const Star& star) const;
 public:
     explicit Level(const std::filesystem::path& path = "assets/levels/level1.json");
     void updateMovingPlatforms(float deltaTime, Ball& player);
     bool updateEnemies(float deltaTime, Ball& player, const sf::FloatRect& previousPlayerBounds);
+    void collectStars(const Ball& player);
+    std::size_t getStarCount() const;
+    std::size_t getCollectedStars() const;
     void setEnemyTexture(const sf::Texture& texture);
     Crate* getCrate();
     const std::vector<MovingPlatform>& getMovingPlatforms() const;
@@ -43,5 +56,5 @@ public:
     void activateCheckpoint();
     void resetEnemies();
     void reset();
-    void draw(sf::RenderWindow& window) const;
+    void draw(sf::RenderWindow& window, const sf::Texture& starTexture) const;
 };

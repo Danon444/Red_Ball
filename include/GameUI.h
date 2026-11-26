@@ -15,7 +15,7 @@ public:
     };
 
     GameUI();
-    void showMenu(const sf::String& title, std::vector<Option> options);
+    void showMenu(const sf::String& title, std::vector<Option> options, const sf::String& detail = {});
     std::optional<std::size_t> handleEvent(const sf::Event& event, const sf::RenderWindow& window);
     void drawMenu(sf::RenderWindow& window, bool overlay) const;
     void drawHud(sf::RenderWindow& window, const sf::String& message);
@@ -23,6 +23,7 @@ public:
 private:
     sf::Font font;
     sf::Text heading;
+    sf::Text menuDetail;
     sf::Text hud;
     std::vector<Option> options;
     std::size_t selected = 0;
