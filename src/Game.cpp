@@ -2,6 +2,9 @@
 
 #include <algorithm>
 #include <array>
+#include <filesystem>
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <utility>
 
@@ -14,6 +17,41 @@ constexpr std::array levelFiles{
 };
 constexpr auto mainMenuLabel = L"Главное меню";
 constexpr auto retryLabel = L"Начать заново";
+constexpr auto progressFile = "progress.json";
+
+std::size_t loadProgress()
+{
+    std::ifstream input(progressFile);
+    const auto data = nlohmann::json::parse(input, nullptr, false);
+    const auto count = data.find("completedLevels");
+    if (count == data.end() || !count->is_number_unsigned())
+    {
+        return 0;
+    }
+
+    if (*count > levelFiles.size())
+    {
+        return levelFiles.size();
+    }
+
+    return count->get<std::size_t>();
+}
+
+bool saveProgress(std::size_t completedLevels)
+{
+    constexpr auto temporaryFile = "progress.json.tmp";
+    std::ofstream output(temporaryFile);
+    output << nlohmann::json{{"completedLevels", completedLevels}}.dump(2) << '\n';
+    output.close();
+    if (!output)
+    {
+        return false;
+    }
+
+    std::error_code error;
+    std::filesystem::rename(temporaryFile, progressFile, error);
+    return !error;
+}
 }
 
 Game::Game()
@@ -21,7 +59,8 @@ Game::Game()
       // Use the visible part of each PNG so the art reaches the ground.
       ballTexture("assets/sprites/ball.png", false, {{23, 46}, {1183, 1187}}),
       enemyTexture("assets/sprites/enemy.png", false, {{87, 117}, {1081, 1044}}),
-      camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f}))
+      camera(sf::FloatRect({0.f, 0.f}, {1100.f, 700.f})),
+      completedLevels(loadProgress())
 {
     window.setKeyRepeatEnabled(false); // запрещает автоповтор событий при удержании клавиши
     window.setFramerateLimit(120);
@@ -246,9 +285,14 @@ void Game::update(float deltaTime)
 
     if (level->hasReachedExit(player.getPosition().x))
     {
-        completedLevels = std::max(completedLevels, levelIndex + 1);
+        const auto savedLevels = loadProgress();
+        completedLevels = std::max({completedLevels, savedLevels, levelIndex + 1});
         state = State::Won;
-        const std::wstring title = L"Уровень " + std::to_wstring(levelIndex + 1) + L" пройден";
+        std::wstring title = L"Уровень " + std::to_wstring(levelIndex + 1) + L" пройден";
+        if (completedLevels > savedLevels && !saveProgress(completedLevels))
+        {
+            title += L"\nНе удалось сохранить прогресс";
+        }
         const auto firstOption = levelIndex + 1 < levelFiles.size() ? L"Следующий уровень" : L"Сыграть ещё раз";
         ui.showMenu(title, {{firstOption}, {mainMenuLabel}});
     }

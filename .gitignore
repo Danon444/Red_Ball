@@ -3,6 +3,12 @@
 /cmake-build-*/
 /RedBall_Reference/
 
+# Local game progress
+/progress.json
+
+# Temporary files
+*.tmp
+
 # Local editor settings
 /.vs/
 
