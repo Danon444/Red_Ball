@@ -29,7 +29,7 @@
     { "x": 7520, "y": 340, "width": 280, "height": 560 }
   ],
   "movingPlatforms": [
-    { "x": 3860, "y": 450, "width": 180, "height": 24, "endX": 3995, "period": 5 }
+    { "x": 3868, "y": 450, "width": 180, "height": 24, "endX": 3987, "period": 5 }
   ],
   "enemies": [
     { "x": 180, "y": 445, "endX": 590, "speed": 105 }

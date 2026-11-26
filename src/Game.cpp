@@ -9,7 +9,8 @@ namespace
 {
 constexpr std::array levelFiles{
     "assets/levels/level1.json",
-    "assets/levels/level2.json"
+    "assets/levels/level2.json",
+    "assets/levels/level3.json"
 };
 constexpr auto mainMenuLabel = L"Главное меню";
 constexpr auto retryLabel = L"Начать заново";
