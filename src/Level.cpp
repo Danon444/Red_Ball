@@ -91,6 +91,14 @@ Level::Level(const std::filesystem::path& path)
             addSurface(bounds.position, bounds.size, earth);
         }
 
+        if (data.contains("hazards"))
+        {
+            for (const auto& hazard : data.at("hazards").get_ref<const json::array_t&>())
+            {
+                hazards.emplace_back(readSurface(hazard));
+            }
+        }
+
         if (data.contains("crate"))
         {
             crate.emplace(readSurface(data.at("crate")));
@@ -173,6 +181,14 @@ bool Level::hasReachedExit(float playerLeftX) const
     return playerLeftX >= width;
 }
 
+bool Level::touchesHazard(const Ball& player) const
+{
+    return std::any_of(hazards.begin(), hazards.end(), [&player](const Hazard& hazard)
+    {
+        return hazard.touches(player);
+    });
+}
+
 void Level::draw(sf::RenderWindow& window, const sf::Texture& starTexture) const
 {
     // Distant scenery is decorative and never participates in collisions.
@@ -198,6 +214,11 @@ void Level::draw(sf::RenderWindow& window, const sf::Texture& starTexture) const
         grass.setPosition(surface.getPosition());
         grass.setFillColor(sf::Color(90, 155, 75));
         window.draw(grass);
+    }
+
+    for (const auto& hazard : hazards)
+    {
+        hazard.draw(window);
     }
 
     for (const auto& platform : movingPlatforms)

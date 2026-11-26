@@ -329,10 +329,10 @@ void Game::update(float deltaTime)
         }
     }
     player.update(deltaTime, surfaces, crate);
-    bool hitEnemy = level->updateEnemies(deltaTime, player, previousPlayerBounds);
 
-    if (hitEnemy || player.getPosition().y > level->getDeathY() ||
-        player.getPosition().x < -60.f)
+    if (level->touchesHazard(player) ||
+        level->updateEnemies(deltaTime, player, previousPlayerBounds) ||
+        player.getPosition().y > level->getDeathY() || player.getPosition().x < -60.f)
     {
         state = State::Lost;
         deathSound.play();
@@ -369,7 +369,10 @@ void Game::update(float deltaTime)
         bestStars = std::max(bestStars, level->getCollectedStars());
         state = State::Won;
         finishSound.play();
-        const std::wstring title = L"Уровень " + std::to_wstring(levelIndex + 1) + L" пройден";
+        const bool lastLevel = levelIndex + 1 == levelFiles.size();
+        const std::wstring title = lastLevel
+            ? L"Все уровни пройдены"
+            : L"Уровень " + std::to_wstring(levelIndex + 1) + L" пройден";
         std::wstring detail;
         if (level->getStarCount() > 0)
         {
@@ -384,7 +387,7 @@ void Game::update(float deltaTime)
             }
             detail += L"Не удалось сохранить прогресс";
         }
-        const auto firstOption = levelIndex + 1 < levelFiles.size() ? L"Следующий уровень" : L"Сыграть ещё раз";
+        const auto firstOption = lastLevel ? L"Сыграть ещё раз" : L"Следующий уровень";
         ui.showMenu(title, {{firstOption}, {mainMenuLabel}}, detail);
     }
 }

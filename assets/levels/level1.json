@@ -30,6 +30,9 @@
     { "x": 7225, "y": 405, "width": 190, "height": 24 },
     { "x": 7520, "y": 340, "width": 280, "height": 560 }
   ],
+  "hazards": [
+    { "x": 680, "y": 560, "width": 120, "height": 38 }
+  ],
   "movingPlatforms": [
     { "x": 3868, "y": 450, "width": 180, "height": 24, "endX": 3987, "period": 5 }
   ],

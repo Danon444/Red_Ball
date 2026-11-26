@@ -42,6 +42,7 @@ set(REDBALL_SOURCES
     src/Enemy.cpp
     src/Game.cpp
     src/GameUI.cpp
+    src/Hazard.cpp
     src/Level.cpp
     src/MovingPlatform.cpp
 )
@@ -75,6 +76,7 @@ if(REDBALL_BUILD_CHECKS)
         src/Ball.cpp 
         src/Crate.cpp
         src/Enemy.cpp
+        src/Hazard.cpp
         src/Level.cpp
         src/MovingPlatform.cpp
     )

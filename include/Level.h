@@ -7,6 +7,7 @@
 #include <vector>
 #include "Crate.h"
 #include "Enemy.h"
+#include "Hazard.h"
 #include "MovingPlatform.h"
 
 class Ball;
@@ -22,6 +23,7 @@ private:
     };
 
     std::vector<sf::RectangleShape> surfaces;
+    std::vector<Hazard> hazards;
     std::vector<MovingPlatform> movingPlatforms;
     std::vector<Enemy> enemies;
     std::vector<Star> stars;
@@ -47,6 +49,7 @@ public:
     const std::vector<MovingPlatform>& getMovingPlatforms() const;
 
     std::vector<sf::FloatRect> getSurfaceBounds() const;
+    bool touchesHazard(const Ball& player) const;
     bool hasReachedExit(float playerLeftX) const;
     sf::FloatRect getCheckpointBounds() const;
     sf::Vector2f getCheckpointSpawn() const;
