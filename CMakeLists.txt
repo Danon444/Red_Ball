@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 include(FetchContent)
 
 set(BUILD_SHARED_LIBS OFF)
-set(SFML_BUILD_AUDIO OFF)
+set(SFML_BUILD_AUDIO ON)
 set(SFML_BUILD_NETWORK OFF)
 
 FetchContent_Declare(SFML
@@ -26,11 +26,13 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 # Исправление для MinGW, если в пути к проекту есть пробелы.
 if(MINGW)
-    if(TARGET freetype)
-        get_target_property(freetype_sources freetype SOURCES)
-        list(FILTER freetype_sources EXCLUDE REGEX "\\.rc$")
-        set_property(TARGET freetype PROPERTY SOURCES ${freetype_sources})
-    endif()
+    foreach(dependency IN ITEMS freetype FLAC)
+        if(TARGET ${dependency})
+            get_target_property(dependency_sources ${dependency} SOURCES)
+            list(FILTER dependency_sources EXCLUDE REGEX "\\.rc$")
+            set_property(TARGET ${dependency} PROPERTY SOURCES ${dependency_sources})
+        endif()
+    endforeach()
 endif()
 
 set(REDBALL_SOURCES
@@ -52,7 +54,7 @@ else()
     target_link_libraries(RedBall PRIVATE SFML::Graphics)
 endif()
 target_include_directories(RedBall PRIVATE include)
-target_link_libraries(RedBall PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(RedBall PRIVATE SFML::Audio nlohmann_json::nlohmann_json)
 if(MSVC)
     target_compile_options(RedBall PRIVATE /utf-8)
 endif()

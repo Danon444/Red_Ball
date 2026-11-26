@@ -170,7 +170,10 @@ void Game::processEvents()
 
         if (state == State::Playing)
         {
-            player.handleEvent(*event);
+            if (player.handleEvent(*event))
+            {
+                jumpSound.play();
+            }
         }
         else if (const auto choice = ui.handleEvent(*event, window))
         {
@@ -332,6 +335,7 @@ void Game::update(float deltaTime)
         player.getPosition().x < -60.f)
     {
         state = State::Lost;
+        deathSound.play();
         if (checkpointReached)
         {
             ui.showMenu(L"Поражение", {{L"Продолжить с чекпоинта"}, {retryLabel}, {mainMenuLabel}});
@@ -364,6 +368,7 @@ void Game::update(float deltaTime)
         auto& bestStars = progress.bestStars[levelIndex];
         bestStars = std::max(bestStars, level->getCollectedStars());
         state = State::Won;
+        finishSound.play();
         const std::wstring title = L"Уровень " + std::to_wstring(levelIndex + 1) + L" пройден";
         std::wstring detail;
         if (level->getStarCount() > 0)

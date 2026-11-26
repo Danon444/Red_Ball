@@ -149,7 +149,7 @@ void Ball::followPlatform(const sf::FloatRect& previousBounds, float shiftX)
     }
 }
 
-void Ball::handleEvent(const sf::Event& event)
+bool Ball::handleEvent(const sf::Event& event)
 {
     if (const auto* key = event.getIf<sf::Event::KeyPressed>())
     {
@@ -161,8 +161,10 @@ void Ball::handleEvent(const sf::Event& event)
         {
             velocityY = -jumpSpeed;
             onGround = false;
+            return true;
         }
     }
+    return false;
 }
 
 void Ball::update(float deltaTime, const std::vector<sf::FloatRect>& surfaces, Crate* crate)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SFML/Audio/Sound.hpp>
+#include <SFML/Audio/SoundBuffer.hpp>
 #include <SFML/Graphics.hpp>
 #include <array>
 #include <cstddef>
@@ -38,6 +40,12 @@ private:
     sf::Texture ballTexture;
     sf::Texture enemyTexture;
     sf::Texture starTexture;
+    sf::SoundBuffer jumpBuffer{"assets/sounds/jump.wav"};
+    sf::SoundBuffer deathBuffer{"assets/sounds/death.wav"};
+    sf::SoundBuffer finishBuffer{"assets/sounds/finish.wav"};
+    sf::Sound jumpSound{jumpBuffer};
+    sf::Sound deathSound{deathBuffer};
+    sf::Sound finishSound{finishBuffer};
     Ball player;
 
     std::optional<Level> level;
