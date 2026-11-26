@@ -39,6 +39,7 @@ set(REDBALL_SOURCES
     src/Crate.cpp
     src/Enemy.cpp
     src/Game.cpp
+    src/GameUI.cpp
     src/Level.cpp
     src/MovingPlatform.cpp
 )
@@ -52,6 +53,9 @@ else()
 endif()
 target_include_directories(RedBall PRIVATE include)
 target_link_libraries(RedBall PRIVATE nlohmann_json::nlohmann_json)
+if(MSVC)
+    target_compile_options(RedBall PRIVATE /utf-8)
+endif()
 
 add_custom_target(RedBallAssets ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
